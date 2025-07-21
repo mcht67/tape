@@ -1,0 +1,20 @@
+hydra:
+  run:
+    dir: .
+  job:
+    # Deactivates the change of the working directory
+    chdir: false
+  # Deactivates the hydra logging
+  output_subdir: null
+  job_logging:
+    disable_existing_loggers: false
+
+defaults:
+  # It is possible to combine multiple configurations for the same model by using a list e.g. ["v1", "causal"]
+  - general: default
+  - preprocess: default
+  - model: 'v1'
+  - train: 'default'
+  - export: default
+  - _self_
+  

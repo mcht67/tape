@@ -1,0 +1,6 @@
+batch_size: 4096 
+learning_rate: 0.03
+epochs: 5
+device_request: 'cuda'
+input_file_path: 'data/processed/data.pt'
+output_file_path: 'models/checkpoints/model.pth'
