@@ -1,48 +1,57 @@
-# This file defines the dvc stages and its depencies
+# # This file defines the dvc stages and its depencies
+# vars:
+#   - birdset_python: /opt/birdset-env/bin/python
 
 stages:
-  preprocess:
-    cmd: python source/preprocess.py
-    deps:
-    - source/preprocess.py
-    - data/raw/
-    params:
-    - preprocess.input_path
-    - preprocess.output_file_path
-    - preprocess.test_split
-    outs:
-    - data/processed/
-  train:
-    cmd: python source/train.py
-    deps:
-    - source/train.py
-    - source/model.py
-    - data/processed/
-    params:
-    - model._target_
-    - model.input_size
-    - train.batch_size
-    - train.learning_rate
-    - train.epochs
-    - train.device_request # needed?
-    - train.input_file_path
-    - train.output_file_path
-    outs:
-    - models/checkpoints/
-  export:
-    cmd: python source/export.py
-    deps:
-    - source/export.py
-    - models/checkpoints/
-    params:
-    - model._target_
-    - model.input_size
-    - export.output_file_path
-    outs:
-    - models/exports/
-  save_logs:
-    cmd: python source/utils/logs.py
-    deps:
-    - source/utils/logs.py
-    outs:
-    - exp_logs/
+  # load_raw_dataset:
+  #   cmd:
+  #     python source/load_raw_dataset.py
+  dataset:
+    cmd: 
+      #${birdset_python} source/dataset.py
+      python source/dataset.py #venv/bin/python 
+  # preprocess:
+  #   cmd: python source/preprocess.py
+  #   deps:
+  #   - source/preprocess.py
+  #   - data/raw/
+  #   params:
+  #   - preprocess.input_path
+  #   - preprocess.output_file_path
+  #   - preprocess.test_split
+  #   outs:
+  #   - data/processed/
+  # train:
+  #   cmd: python source/train.py
+  #   deps:
+  #   - source/train.py
+  #   - source/model.py
+  #   - data/processed/
+  #   params:
+  #   - model._target_
+  #   - model.input_size
+  #   - train.batch_size
+  #   - train.learning_rate
+  #   - train.epochs
+  #   - train.device_request # needed?
+  #   - train.input_file_path
+  #   - train.output_file_path
+  #   outs:
+  #   - models/checkpoints/
+  # export:
+  #   cmd: python source/export.py
+  #   deps:
+  #   - source/export.py
+  #   - models/checkpoints/
+  #   params:
+  #   - model._target_
+  #   - model.input_size
+  #   - export.output_file_path
+  #   outs:
+  #   - models/exports/
+  # save_logs:
+  #   cmd: python source/utils/logs.py
+  #   deps:
+  #   - source/utils/logs.py
+  #   outs:
+  #   - exp_logs/
