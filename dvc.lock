@@ -85,3 +85,49 @@ stages:
       md5: d751713988987e9331980363e24189ce.dir
       size: 0
       nfiles: 0
+  load_raw_dataset:
+    cmd: python source/load_raw_dataset.py
+    deps:
+    - path: source/load_raw_dataset.py
+      hash: md5
+      md5: 0a5d728fb398796c44fcdaed54312b77
+      size: 630
+    params:
+      params.yaml:
+        dataset.dataset_key: HSN_xc
+        dataset.dataset_split: train
+        dataset.raw_dataset_dir: data/raw_datasets/
+        dataset.sampling_rate: 32000
+    outs:
+    - path: data/raw_datasets/
+      hash: md5
+      md5: 60fb9c968e3766c97110fba68c667319.dir
+      size: 6165234713
+      nfiles: 10
+  mix_dataset:
+    cmd: python source/mix_dataset.py
+    deps:
+    - path: data/raw_datasets/
+      hash: md5
+      md5: 60fb9c968e3766c97110fba68c667319.dir
+      size: 6165234713
+      nfiles: 10
+    - path: source/mix_dataset.py
+      hash: md5
+      md5: 2f69c0e46e388544b96beacc9542c8da
+      size: 6564
+    params:
+      params.yaml:
+        dataset.dataset_key: HSN_xc
+        dataset.dataset_split: train
+        dataset.max_polyphony_degree: 5
+        dataset.mixed_dataset_dir: data/mixed_datasets/
+        dataset.raw_dataset_dir: data/raw_datasets/
+        dataset.sampling_rate: 32000
+        dataset.segment_duration: 3
+    outs:
+    - path: data/mixed_datasets/
+      hash: md5
+      md5: aea692d27f6c0981564a3f48a488400a.dir
+      size: 333815981
+      nfiles: 3
