@@ -85,3 +85,7 @@ stages:
       md5: d751713988987e9331980363e24189ce.dir
       size: 0
       nfiles: 0
+  load_raw_dataset:
+    cmd: python source/load_raw_dataset.py
+  dataset:
+    cmd: python source/dataset.py
