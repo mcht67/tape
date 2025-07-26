@@ -12,9 +12,11 @@ hydra:
 defaults:
   # It is possible to combine multiple configurations for the same model by using a list e.g. ["v1", "causal"]
   - general: default
+  - dataset: default
   - preprocess: default
   - model: 'v1'
   - train: 'default'
   - export: default
   - _self_
+
   
