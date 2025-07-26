@@ -1,24 +1,25 @@
-# This file defines parameters for direct runs of the python files (eg. for debugging)
-# Parameters for experiments using dvc and hydra are defined in conf/config.yaml and subfolders
-
 general:
   random_seed: 42
+dataset:
+  dataset_dir: data/datasets/
+  dataset_key: HSN_xc
+  dataset_split: train
+  sampling_rate: 32000
+  segment_duration: 5
+  max_polyphony_degree: 7
 preprocess:
   input_path: data/raw/
-  output_file_path: 'debug_tmp/data/processed/data.pt'
+  output_file_path: data/processed/data.pt
   test_split: 0.2
 model:
   _target_: model.Conv1DAutoencoder
   input_size: 8000
 train:
-  input_file_path: 'data/processed/data.pt'
-  output_file_path: 'debug_tmp/models/checkpoints/model.pth'
   batch_size: 4096
-  learning_rate: 0.01
-  epochs: 3
+  learning_rate: 0.03
+  epochs: 5
   device_request: cuda
-  tensorboard_path: debug_tmp/
-  sync_interval: 0
+  input_file_path: data/processed/data.pt
+  output_file_path: models/checkpoints/model.pth
 export:
-  output_file_path: 'debug_tmp/models/exports/model.pth'
-
+  output_file_path: models/exports/model.pth
