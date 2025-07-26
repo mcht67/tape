@@ -1,48 +1,79 @@
-# This file defines the dvc stages and its depencies
+# # This file defines the dvc stages and its depencies
+# vars:
+#   - birdset_python: /opt/birdset-env/bin/python
 
 stages:
-  preprocess:
-    cmd: python source/preprocess.py
+  load_raw_dataset:
+    cmd:
+      python source/load_raw_dataset.py
     deps:
-    - source/preprocess.py
-    - data/raw/
+      - source/load_raw_dataset.py
     params:
-    - preprocess.input_path
-    - preprocess.output_file_path
-    - preprocess.test_split
+      - dataset.sampling_rate
+      - dataset.dataset_key
+      - dataset.dataset_split
+      - dataset.raw_dataset_dir
     outs:
-    - data/processed/
-  train:
-    cmd: python source/train.py
+      - data/raw_datasets/
+  mix_dataset:
+    cmd: 
+      #${birdset_python} source/dataset.py
+      python source/mix_dataset.py #venv/bin/python
     deps:
-    - source/train.py
-    - source/model.py
-    - data/processed/
+      - source/mix_dataset.py 
+      - data/raw_datasets/
     params:
-    - model._target_
-    - model.input_size
-    - train.batch_size
-    - train.learning_rate
-    - train.epochs
-    - train.device_request # needed?
-    - train.input_file_path
-    - train.output_file_path
+      - dataset.sampling_rate
+      - dataset.max_polyphony_degree
+      - dataset.segment_duration
+      - dataset.dataset_key
+      - dataset.dataset_split
+      - dataset.raw_dataset_dir
+      - dataset.mixed_dataset_dir
     outs:
-    - models/checkpoints/
-  export:
-    cmd: python source/export.py
-    deps:
-    - source/export.py
-    - models/checkpoints/
-    params:
-    - model._target_
-    - model.input_size
-    - export.output_file_path
-    outs:
-    - models/exports/
-  save_logs:
-    cmd: python source/utils/logs.py
-    deps:
-    - source/utils/logs.py
-    outs:
-    - exp_logs/
+      - data/mixed_datasets/
+  # preprocess:
+  #   cmd: python source/preprocess.py
+  #   deps:
+  #   - source/preprocess.py
+  #   - data/raw/
+  #   params:
+  #   - preprocess.input_path
+  #   - preprocess.output_file_path
+  #   - preprocess.test_split
+  #   outs:
+  #   - data/processed/
+  # train:
+  #   cmd: python source/train.py
+  #   deps:
+  #   - source/train.py
+  #   - source/model.py
+  #   - data/processed/
+  #   params:
+  #   - model._target_
+  #   - model.input_size
+  #   - train.batch_size
+  #   - train.learning_rate
+  #   - train.epochs
+  #   - train.device_request # needed?
+  #   - train.input_file_path
+  #   - train.output_file_path
+  #   outs:
+  #   - models/checkpoints/
+  # export:
+  #   cmd: python source/export.py
+  #   deps:
+  #   - source/export.py
+  #   - models/checkpoints/
+  #   params:
+  #   - model._target_
+  #   - model.input_size
+  #   - export.output_file_path
+  #   outs:
+  #   - models/exports/
+  # save_logs:
+  #   cmd: python source/utils/logs.py
+  #   deps:
+  #   - source/utils/logs.py
+  #   outs:
+  #   - exp_logs/
