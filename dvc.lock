@@ -1,87 +1,48 @@
 schema: '2.0'
 stages:
-  preprocess:
-    cmd: python source/preprocess.py
+  load_raw_dataset:
+    cmd: python source/load_raw_dataset.py
     deps:
-    - path: data/raw/
+    - path: source/load_raw_dataset.py
       hash: md5
-      md5: e924618c832a3aba8637bf8ee24171b4.dir
-      size: 2439897
-      nfiles: 13
-    - path: source/preprocess.py
-      hash: md5
-      md5: 4568d0e8d5372b92e90a5912a7e6d306
-      size: 4081
+      md5: 0a5d728fb398796c44fcdaed54312b77
+      size: 630
     params:
       params.yaml:
-        preprocess.input_path: data/raw/
-        preprocess.test_split: 0.2
+        dataset.dataset_key: HSN_xc
+        dataset.dataset_split: train
+        dataset.raw_dataset_dir: data/raw_datasets/
+        dataset.sampling_rate: 32000
     outs:
-    - path: data/processed/
+    - path: data/raw_datasets/
       hash: md5
-      md5: 967511ab90a255e4c6aef8315a5b1f60.dir
-      size: 321869
-      nfiles: 1
-  train:
-    cmd: python source/train.py
+      md5: 60fb9c968e3766c97110fba68c667319.dir
+      size: 6165234713
+      nfiles: 10
+  mix_dataset:
+    cmd: python source/mix_dataset.py
     deps:
-    - path: data/processed/
+    - path: data/raw_datasets/
       hash: md5
-      md5: 967511ab90a255e4c6aef8315a5b1f60.dir
-      size: 321869
-      nfiles: 1
-    - path: source/model.py
+      md5: 60fb9c968e3766c97110fba68c667319.dir
+      size: 6165234713
+      nfiles: 10
+    - path: source/mix_dataset.py
       hash: md5
-      md5: ae7eed6e354d5436e4d4af1d53d19fd3
-      size: 1773
-    - path: source/train.py
-      hash: md5
-      md5: 5813f6333e8767414e5b836ad1f0a353
-      size: 7180
+      md5: 2f69c0e46e388544b96beacc9542c8da
+      size: 6564
     params:
       params.yaml:
-        model.input_length: 8000
-        train.batch_size: 4096
-        train.device_request: cuda
-        train.epochs: 1
-        train.learning_rate: 0.01
+        dataset.dataset_key: HSN_xc
+        dataset.dataset_split: train
+        dataset.max_polyphony_degree: 7
+        dataset.mixed_dataset_dir: data/mixed_datasets/
+        dataset.raw_dataset_dir: data/raw_datasets/
+        dataset.sampling_rate: 32000
+        dataset.segment_duration: 5
     outs:
-    - path: models/checkpoints/
+    - path: data/mixed_datasets/
       hash: md5
-      md5: dc467d457c626d5837b6e5627756a4ed.dir
-      size: 24881
-      nfiles: 1
-  export:
-    cmd: python source/export.py
-    deps:
-    - path: models/checkpoints/
-      hash: md5
-      md5: dc467d457c626d5837b6e5627756a4ed.dir
-      size: 24881
-      nfiles: 1
-    - path: source/export.py
-      hash: md5
-      md5: 024de1b65121046e8bc35a0af5bfba02
-      size: 1230
-    params:
-      params.yaml:
-        model.input_length: 8000
-    outs:
-    - path: models/exports/
-      hash: md5
-      md5: 440bd9652ffc5d06aafe692c7235f664.dir
-      size: 27633
-      nfiles: 1
-  save_logs:
-    cmd: python source/utils/logs.py
-    deps:
-    - path: source/utils/logs.py
-      hash: md5
-      md5: c02425092772f434f06560a38e1960fd
-      size: 9135
-    outs:
-    - path: exp_logs/
-      hash: md5
-      md5: d751713988987e9331980363e24189ce.dir
-      size: 0
-      nfiles: 0
+      md5: 848a9b2d8da8cc8e15d79fc6092cc2c2.dir
+      size: 319473869
+      nfiles: 3
