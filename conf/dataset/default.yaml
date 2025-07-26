@@ -1,0 +1,7 @@
+raw_dataset_dir: "data/raw_datasets/"
+mixed_dataset_dir: "data/mixed_datasets/"
+dataset_key: "HSN_xc"
+dataset_split: "train"
+sampling_rate: 32000
+segment_duration: 5
+max_polyphony_degree: 7
