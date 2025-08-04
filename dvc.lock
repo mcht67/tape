@@ -51,13 +51,13 @@ stages:
     deps:
     - path: data/polyphonic_datasets/HSN_xc_polyphonic
       hash: md5
-      md5: 2c052d21896304825de91d3f6cdbaf0f.dir
-      size: 962056181
-      nfiles: 5
+      md5: 63d6524ade3b2d57d370b4bb51def20c.dir
+      size: 319473869
+      nfiles: 3
     - path: source/preprocess.py
       hash: md5
-      md5: 3b7740a88097796cd0055a21148af028
-      size: 3150
+      md5: 945c799e7e8404e6cef41de74f9f013a
+      size: 3734
     params:
       params.yaml:
         embeddings.feature: audio
@@ -65,8 +65,8 @@ stages:
         - perch_8
         - yamnet
     outs:
-    - path: data/preprocessed/HSN_xc_preprocessed
+    - path: data/preprocessed_datasets/HSN_xc_preprocessed
       hash: md5
-      md5: 9b3c83483a8ff17547986fc32d55fc72.dir
+      md5: 4ef3e5a14407171dcecefeda5e6e7ab7.dir
       size: 322820443
       nfiles: 3
