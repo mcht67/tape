@@ -46,3 +46,73 @@ stages:
       md5: 848a9b2d8da8cc8e15d79fc6092cc2c2.dir
       size: 319473869
       nfiles: 3
+  load_raw_data:
+    cmd: python source/load_raw_data.py
+    deps:
+    - path: source/load_raw_data.py
+      hash: md5
+      md5: 5fe74d547fe917f7bad8ff4d32b65c5e
+      size: 634
+    params:
+      params.yaml:
+        dataset.name: DBD-research-group/BirdSet
+        dataset.sampling_rate: 32000
+        dataset.split: train
+        dataset.subset: HSN_xc
+        general.random_seed: 42
+    outs:
+    - path: data/raw_datasets/HSN_xc
+      hash: md5
+      md5: d01d5e89fb41f6b671e7899f6bd2683b.dir
+      size: 6165234713
+      nfiles: 10
+  mix_audio:
+    cmd: python source/mix_audio.py
+    deps:
+    - path: data/raw_datasets/HSN_xc
+      hash: md5
+      md5: d01d5e89fb41f6b671e7899f6bd2683b.dir
+      size: 6165234713
+      nfiles: 10
+    - path: source/mix_audio.py
+      hash: md5
+      md5: e245e4ec80142d2c19c1c102bda53344
+      size: 6469
+    params:
+      params.yaml:
+        dataset.max_polyphony_degree: 7
+        dataset.name: DBD-research-group/BirdSet
+        dataset.sampling_rate: 32000
+        dataset.segment_duration: 5
+        dataset.split: train
+        general.random_seed: 42
+    outs:
+    - path: data/polyphonic_datasets/HSN_xc_polyphonic
+      hash: md5
+      md5: 63d6524ade3b2d57d370b4bb51def20c.dir
+      size: 319473869
+      nfiles: 3
+  preprocess:
+    cmd: python source/preprocess.py
+    deps:
+    - path: data/polyphonic_datasets/HSN_xc_polyphonic
+      hash: md5
+      md5: 0b02172881374bc257c9d9b46b1b3177.dir
+      size: 962056181
+      nfiles: 5
+    - path: source/preprocess.py
+      hash: md5
+      md5: 3b7740a88097796cd0055a21148af028
+      size: 3150
+    params:
+      params.yaml:
+        embeddings.feature: audio
+        embeddings.models:
+        - perch_8
+        - yamnet
+    outs:
+    - path: data/preprocessed/HSN_xc_preprocessed
+      hash: md5
+      md5: f827abe98ccd37bfc3bf6fd351e0e210.dir
+      size: 322820443
+      nfiles: 3

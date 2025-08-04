@@ -74,6 +74,9 @@ dvc exp run $EXP_PARAMS &&
 echo "Pushing experiment..." &&
 dvc exp push origin &&
 
+dvc status
+dvc diff preprocess
+
 # Clean up the temporary sub-directory
 echo "Cleaning up..." &&
 cd .. &&
