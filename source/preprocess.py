@@ -1,71 +1,101 @@
-import numpy as np
-import torch
-from pathlib import Path
+from perch_hoplite.zoo import model_configs
 from omegaconf import OmegaConf
-from pathlib import Path
-from torch.utils.data import random_split
+from datasets import load_from_disk
+import numpy as np
+from functools import partial
+import shutil
+from utils.dsp import resample_audio
+import os
 
-def normalize(data):
-    data_norm = max(max(data), abs(min(data)))
-    return data / data_norm
+def load_model_by_key(model_key):
+    model_config_name = model_configs.ModelConfigName(model_key)
+    preset_info = model_configs.get_preset_model_config(model_config_name)
+    model = preset_info.load_model()
 
-def load_data(path):
-    
-    input_dir = Path(path)
-    print("Looking in:", input_dir.resolve())
+    return model, preset_info
 
-    input_files = sorted(input_dir.glob("dummy_input_*.txt"))
-    target_files = sorted(input_dir.glob("dummy_target_*.txt"))
+def embed_example(example, model, feature_key, new_feature_key, sampling_rate):
 
-    print(f"Found {len(input_files)} input files.")
-    print(f"Found {len(target_files)} target files.")
+    audio = example[feature_key]
+    audio = resample_audio(audio, example['sampling_rate'], sampling_rate)
 
-    assert len(input_files) > 0 , "No input files have been found."
-    assert len(input_files) == len(target_files), "Mismatched input and target files."
+    # Normalize
+    audio = audio / (np.max(np.abs(audio)) + 1e-9)
 
-    X_list = []
-    y_list = []
+    # Get embedding
+    outputs = model.embed(audio)
+    example[new_feature_key] = outputs.embeddings
 
-    for input_path, target_path in zip(input_files, target_files):
-        x = np.loadtxt(input_path)
-        y = np.loadtxt(target_path)
+    return example
 
-        assert x.shape == y.shape, f"Shape mismatch: {input_path.name}"
-
-        X_list.append(x)
-        y_list.append(y)
-
-        X_array = np.array(X_list, dtype=np.float32)
-        y_array = np.array(y_list, dtype=np.float32)
-
-    return torch.tensor(X_array, dtype=torch.float32), torch.tensor(y_array, dtype=torch.float32)
-
-def split_data(tensor, test_split):
-    total_len = tensor.size(0)
-    test_len = int(total_len * test_split)
-    return tensor[:-test_len], tensor[-test_len:]
+def add_embeddings(model_keys, feature_key, dataset):
+    modified = False
+    for model_key in model_keys:
+        new_feature_key = model_key + "_embedding"
+        if new_feature_key not in dataset.features:
+            model, preset_info = load_model_by_key(model_key)
+            sampling_rate = preset_info.model_config["sample_rate"]
+            embedding_fn = partial(
+                embed_example,
+                model=model,
+                feature_key=feature_key,
+                new_feature_key=new_feature_key,
+                sampling_rate=sampling_rate,
+            )
+            dataset = dataset.map(embedding_fn)
+            modified = True
+    return dataset, modified
 
 def main():
-    # Load the configuration file
+
+    # Configuration
     cfg = OmegaConf.load("params.yaml")
 
-    X_all, y_all = load_data(cfg.preprocess.input_path) # Replace this with your own data loading function
-    print("Data loaded and normalized.")
+    model_keys = cfg.embeddings.models
+    feature_key = cfg.embeddings.feature
 
-    X_training, X_testing = split_data(X_all, cfg.preprocess.test_split)
-    y_training, y_testing = split_data(y_all, cfg.preprocess.test_split)
-    print("Data split into training and testing sets.")
-  
-    output_file_path = Path(cfg.preprocess.output_file_path) # output path differs for runs with dvc (hydra) and file runs (params.yaml)
-    output_file_path.parent.mkdir(parents=True, exist_ok=True)
+    polyphonic_dataset_path = cfg.paths.polyphonic_dataset
+    preprocessed_dataset_path = cfg.paths.preprocessed_dataset
+    
+     # Load Dataset depending on state of preprocessing dataset
+    if not os.path.exists(preprocessed_dataset_path):
+        dataset = load_from_disk(polyphonic_dataset_path)
+        os.makedirs(preprocessed_dataset_path, exist_ok=True)
+    else:
+        dataset = load_from_disk(preprocessed_dataset_path)
+    
+    # Preprocessing
+    dataset_was_modified = False
 
-    torch.save({
-        'X_training': X_training,
-        'y_training': y_training,
-        'X_testing': X_testing,
-        'y_testing': y_testing
-    }, output_file_path)
-    print("Preprocessing done and data saved.")
+    # Embeddings
+    modified_dataset, modified = add_embeddings(model_keys, feature_key, dataset)
+
+    if modified:
+        dataset = modified_dataset
+        dataset_was_modified = True
+    else:
+        print("No changes in embeddings.")
+
+    # Save dataset
+    if not dataset_was_modified:
+        print('Preprocessed Dataset was not modified.')
+    
+    else:
+        # Save to temporary location
+        temp_path = preprocessed_dataset_path + "_temp"
+        os.makedirs(temp_path, exist_ok=True)
+        dataset.save_to_disk(temp_path)
+
+        # Move old data to backup
+        backup_path = preprocessed_dataset_path + "_backup"
+        if os.path.exists(preprocessed_dataset_path):
+            shutil.move(preprocessed_dataset_path, backup_path)
+
+        # Move temp data into place
+        shutil.move(temp_path, preprocessed_dataset_path)
+
+        # Optionally remove backup
+        shutil.rmtree(backup_path)
 
 if __name__ == "__main__":
     main()
