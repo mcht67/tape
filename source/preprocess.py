@@ -56,10 +56,12 @@ def main():
 
     polyphonic_dataset_path = cfg.paths.polyphonic_dataset
     preprocessed_dataset_path = cfg.paths.preprocessed_dataset
+
+    # Load polyphonic dataset to satisfy dvcs dependency tracking
+    dataset = load_from_disk(polyphonic_dataset_path)
     
      # Load Dataset depending on state of preprocessing dataset
     if not os.path.exists(preprocessed_dataset_path):
-        dataset = load_from_disk(polyphonic_dataset_path)
         os.makedirs(preprocessed_dataset_path, exist_ok=True)
     else:
         dataset = load_from_disk(preprocessed_dataset_path)
