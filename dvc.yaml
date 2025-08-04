@@ -3,36 +3,51 @@
 #   - birdset_python: /opt/birdset-env/bin/python
 
 stages:
-  load_raw_dataset:
+  load_raw_data:
     cmd:
       python source/load_raw_dataset.py
     deps:
       - source/load_raw_dataset.py
     params:
+      - general.random_seed
+      - dataset.name
+      - dataset.subset
+      - dataset.split
       - dataset.sampling_rate
-      - dataset.dataset_key
-      - dataset.dataset_split
-      - dataset.raw_dataset_dir
+      - paths.raw_dataset
     outs:
-      - data/raw_datasets/
-  mix_dataset:
+      - ${paths.raw_dataset}
+  mix_data:
     cmd: 
       #${birdset_python} source/dataset.py
       python source/mix_dataset.py #venv/bin/python
     deps:
       - source/mix_dataset.py 
-      - data/raw_datasets/
+      - ${paths.raw_dataset}
     params:
+      - general.random_seed
       - dataset.sampling_rate
       - dataset.max_polyphony_degree
       - dataset.segment_duration
-      - dataset.dataset_key
-      - dataset.dataset_split
-      - dataset.raw_dataset_dir
-      - dataset.mixed_dataset_dir
+      - dataset.name
+      - dataset.split
+      - paths.raw_dataset
+      - paths.mixed_dataset
     outs:
-      - data/mixed_datasets/
-  # preprocess:
+      - ${paths.mixed_dataset}
+  preprocess:
+    cmd: python source/preprocess.py
+    deps:
+      - source/preprocess.py
+      - ${paths.mixed_dataset}
+    params:
+      - embeddings.models
+      - embeddings.feature
+    outs:
+    - ${paths.preprocessed_dataset}
+  
+
+  # preprocess: 
   #   cmd: python source/preprocess.py
   #   deps:
   #   - source/preprocess.py

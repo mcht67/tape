@@ -1,13 +1,19 @@
 general:
   random_seed: 42
 dataset:
-  raw_dataset_dir: "data/raw_datasets/"
-  mixed_dataset_dir: "data/mixed_datasets/"
-  dataset_key: HSN_xc
-  dataset_split: train
+  name: DBD-research-group/BirdSet
+  subset: HSN_xc
+  split: train
   sampling_rate: 32000
   segment_duration: 5
   max_polyphony_degree: 7
+  test_split: 0.1
+  val_split: 0.1
+embeddings:
+  models:
+  - perch_8
+  - yamnet
+  feature: audio
 preprocess:
   input_path: data/raw/
   output_file_path: data/processed/data.pt
@@ -24,3 +30,7 @@ train:
   output_file_path: models/checkpoints/model.pth
 export:
   output_file_path: models/exports/model.pth
+paths:
+  raw_dataset: data/raw_datasets/HSN_xc
+  mixed_dataset: data/mixed_datasets/HSN_xc_mixed
+  preprocessed_dataset: data/preprocessed_datasets/HSN_xc_preprocessed

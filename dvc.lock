@@ -46,3 +46,76 @@ stages:
       md5: 848a9b2d8da8cc8e15d79fc6092cc2c2.dir
       size: 319473869
       nfiles: 3
+  load_raw_data:
+    cmd: python source/load_raw_dataset.py
+    deps:
+    - path: source/load_raw_dataset.py
+      hash: md5
+      md5: 8767a14a775eb6906a06b9d986fce920
+      size: 690
+    params:
+      params.yaml:
+        dataset.name: DBD-research-group/BirdSet
+        dataset.sampling_rate: 32000
+        dataset.split: train
+        dataset.subset: HSN_xc
+        general.random_seed: 42
+        paths.raw_dataset: data/raw_datasets/HSN_xc
+    outs:
+    - path: data/raw_datasets/HSN_xc
+      hash: md5
+      md5: d01d5e89fb41f6b671e7899f6bd2683b.dir
+      size: 6165234713
+      nfiles: 10
+  mix_data:
+    cmd: python source/mix_dataset.py
+    deps:
+    - path: data/raw_datasets/HSN_xc
+      hash: md5
+      md5: d01d5e89fb41f6b671e7899f6bd2683b.dir
+      size: 6165234713
+      nfiles: 10
+    - path: source/mix_dataset.py
+      hash: md5
+      md5: 5ec463a94b4d25ca1b8726cef5639868
+      size: 6439
+    params:
+      params.yaml:
+        dataset.max_polyphony_degree: 7
+        dataset.name: DBD-research-group/BirdSet
+        dataset.sampling_rate: 32000
+        dataset.segment_duration: 5
+        dataset.split: train
+        general.random_seed: 42
+        paths.mixed_dataset: data/mixed_datasets/HSN_xc_mixed
+        paths.raw_dataset: data/raw_datasets/HSN_xc
+    outs:
+    - path: data/mixed_datasets/HSN_xc_mixed
+      hash: md5
+      md5: 63d6524ade3b2d57d370b4bb51def20c.dir
+      size: 319473869
+      nfiles: 3
+  preprocess:
+    cmd: python source/preprocess.py
+    deps:
+    - path: data/mixed_datasets/HSN_xc_mixed
+      hash: md5
+      md5: 467f0c45c869746030f07d33efafbb62.dir
+      size: 962056181
+      nfiles: 5
+    - path: source/preprocess.py
+      hash: md5
+      md5: e59df99ff1ac6f5033ea1912ad24a49b
+      size: 3135
+    params:
+      params.yaml:
+        embeddings.feature: audio
+        embeddings.models:
+        - perch_8
+        - yamnet
+    outs:
+    - path: data/preprocessed_datasets/HSN_xc_preprocessed
+      hash: md5
+      md5: a4943f59d3b954f592a12b4c495bd084.dir
+      size: 322820443
+      nfiles: 3

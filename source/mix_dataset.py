@@ -1,6 +1,6 @@
 # Very first line in source/dataset.py
 print("=== SCRIPT STARTED ===", flush=True)
-from datasets import load_dataset, Dataset, Audio, Features, Sequence, Value, load_from_disk, concatenate_datasets
+from datasets import load_dataset, Dataset, Audio, Features, Sequence, Value, load_from_disk, concatenate_datasets, DatasetDict
 from pathlib import Path
 import numpy as np
 import os
@@ -11,6 +11,7 @@ from omegaconf import OmegaConf
 from utils import config
 from utils.dsp import resample_audio
 from utils.general import create_index_map_from_range, pop_random_index, reset_index_map
+
 print('Imports done', flush=True)
 
 def flatten_raw_examples(raw_examples):
@@ -123,15 +124,12 @@ def main():
     segment_duration = cfg.dataset.segment_duration # in seconds
     max_polyphony_degree = cfg.dataset.max_polyphony_degree
 
-    dataset_key = cfg.dataset.dataset_key
-    #dataset_split = cfg.dataset.dataset_split
+    dataset_subset = cfg.dataset.subset
+ 
+    raw_dataset_path = cfg.paths.raw_dataset
 
-    raw_dataset_dir = cfg.dataset.raw_dataset_dir
-    raw_dataset_path = raw_dataset_dir + dataset_key
-
-    mixed_dataset_dir = cfg.dataset.mixed_dataset_dir
-    output_path = mixed_dataset_dir + dataset_key + "_mixed/"
-    os.makedirs(output_path, exist_ok=True)
+    mixed_dataset_path = cfg.paths.mixed_dataset
+    os.makedirs(mixed_dataset_path, exist_ok=True)
 
     # Load raw dataset
     print("Load dataset", flush=True)
@@ -173,11 +171,11 @@ def main():
     full_dataset = concatenate_datasets(datasets)
 
     # Save final dataset
-    full_dataset.save_to_disk(output_path)
-    print(f'Saved dataset to {output_path}', flush=True)
+    full_dataset.save_to_disk(mixed_dataset_path)
+    print(f'Saved mixed dataset to {mixed_dataset_path}', flush=True)
 
     # Load dataset
-    new_dataset = load_from_disk(output_path)
+    new_dataset = load_from_disk(mixed_dataset_path)
     print(f'New Dataset saved to disk: {new_dataset}', flush=True)
 
     # Remove tmp files
