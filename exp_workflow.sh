@@ -66,8 +66,6 @@ if [ -f "data/raw.dvc" ]; then
     dvc pull data/raw;
 fi &&
 
-dvc repro --force preprocess
-
 # Run the experiment with passed parameters. Runs with the default parameters if none are passed.
 echo "Running experiment..." &&
 dvc exp run $EXP_PARAMS &&
@@ -75,9 +73,6 @@ dvc exp run $EXP_PARAMS &&
 # Push the results to the DVC remote repository
 echo "Pushing experiment..." &&
 dvc exp push origin &&
-
-dvc status
-dvc diff preprocess
 
 # Clean up the temporary sub-directory
 echo "Cleaning up..." &&
