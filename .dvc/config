@@ -3,6 +3,7 @@
 [cache]
     shared = group
     type = symlink
+    dir = /Users/maltecohrt/Documents/Coding/DeepLearning/tape/.dvc/cache
 [hydra]
     enabled = True
 ['remote "myremote"']
