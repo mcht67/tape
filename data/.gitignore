@@ -1,5 +1,7 @@
 /raw
-/processed
+/preprocessed
 /datasets
 /raw_datasets
 /mixed_datasets
+/preprocessed
+/polyphonic_datasets/

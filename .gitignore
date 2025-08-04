@@ -34,3 +34,5 @@ local.env
 source/import numpy as np.py
 debug_tmp
 dataset-env/
+source/split_dataset.py
+source/train(old).py

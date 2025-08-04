@@ -1,3 +1,11 @@
+# ==============================================
+# CHANGING THESE COULD BREAK DVC TRACKING
+paths: 
+  raw_dataset: data/raw_datasets/${dataset.subset}
+  polyphonic_dataset: data/polyphonic_datasets/${dataset.subset}_polyphonic
+  preprocessed_dataset: data/preprocessed_datasets/${dataset.subset}_preprocessed
+# ==============================================
+
 hydra:
   run:
     dir: .
@@ -13,6 +21,7 @@ defaults:
   # It is possible to combine multiple configurations for the same model by using a list e.g. ["v1", "causal"]
   - general: default
   - dataset: default
+  - embeddings: default
   - preprocess: default
   - model: 'v1'
   - train: 'default'
