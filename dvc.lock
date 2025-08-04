@@ -51,7 +51,7 @@ stages:
     deps:
     - path: data/polyphonic_datasets/HSN_xc_polyphonic
       hash: md5
-      md5: 2c052d21896304825de91d3f6cdbaf0f.dir
+      md5: 6ebcc51379ebb5d350ecbd7ac8734dad.dir
       size: 962056181
       nfiles: 5
     - path: source/preprocess.py
@@ -65,8 +65,8 @@ stages:
         - perch_8
         - yamnet
     outs:
-    - path: data/preprocessed/HSN_xc_preprocessed
+    - path: data/preprocessed_datasets/HSN_xc_preprocessed
       hash: md5
-      md5: 9b3c83483a8ff17547986fc32d55fc72.dir
+      md5: cdcd1cafabc18b19835aa3f6c5499aa0.dir
       size: 322820443
       nfiles: 3
