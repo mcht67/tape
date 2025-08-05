@@ -33,7 +33,7 @@ def embed_example(example, model, feature_key, new_feature_key, sampling_rate):
 def add_embeddings(model_keys, feature_key, dataset, cache_dir):
     modified = False
     for model_key in model_keys:
-        new_feature_key = model_key + "_embedding"
+        new_feature_key = model_key + "_embeddings"
         if new_feature_key not in dataset.features:
             model, preset_info = load_model_by_key(model_key)
             sampling_rate = preset_info.model_config["sample_rate"]

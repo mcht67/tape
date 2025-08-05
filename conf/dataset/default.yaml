@@ -4,5 +4,3 @@
   sampling_rate: 32000
   segment_duration: 5
   max_polyphony_degree: 7
-  test_split: 0.1
-  val_split: 0.1

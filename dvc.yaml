@@ -42,3 +42,18 @@ stages:
       - embeddings.feature
     outs:
     - ${paths.preprocessed_dataset}
+  train:
+    cmd: python source/train.py
+    deps:
+      - source/train.py
+      - ${paths.preprocessed_dataset}
+    params:
+      - general.random_seed
+      - train.test_split
+      - train.val_split
+      - train.epochs
+      - train.features
+      - train.labels
+      - train.batch_size
+      - train.pooling_strategy
+
