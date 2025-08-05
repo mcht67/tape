@@ -56,8 +56,8 @@ stages:
       nfiles: 3
     - path: source/preprocess.py
       hash: md5
-      md5: d4f3a7099edeed4e1eb1ee5fc45a917f
-      size: 3758
+      md5: 59e52bfbfe26c5621bc9604f794f95ee
+      size: 3735
     params:
       params.yaml:
         embeddings.feature: audio
@@ -67,6 +67,28 @@ stages:
     outs:
     - path: data/preprocessed_datasets/HSN_xc_preprocessed
       hash: md5
-      md5: ad98b8df20f9be59d0628e266326b3db.dir
-      size: 322820443
+      md5: 9c25ef4018f74898b8a71e373eb5da27.dir
+      size: 322820447
       nfiles: 3
+  train:
+    cmd: python source/train.py
+    deps:
+    - path: data/preprocessed_datasets/HSN_xc_preprocessed
+      hash: md5
+      md5: 9c25ef4018f74898b8a71e373eb5da27.dir
+      size: 322820447
+      nfiles: 3
+    - path: source/train.py
+      hash: md5
+      md5: d568e44b586795ad9fe490e8d520f07e
+      size: 3843
+    params:
+      params.yaml:
+        general.random_seed: 42
+        train.batch_size: 32
+        train.epochs: 5
+        train.features: perch_8_embeddings
+        train.labels: polyphony_degree
+        train.pooling_strategy: mean
+        train.test_split: 0.1
+        train.val_split: 0.1
