@@ -1,6 +1,6 @@
 from perch_hoplite.zoo import model_configs
 from omegaconf import OmegaConf
-from datasets import load_from_disk, disable_caching
+from datasets import load_from_disk, Dataset
 import datasets
 import numpy as np
 from functools import partial
@@ -33,7 +33,7 @@ def embed_example(example, model, feature_key, new_feature_key, sampling_rate):
 def add_embeddings(model_keys, feature_key, dataset, cache_dir):
     modified = False
     for model_key in model_keys:
-        new_feature_key = model_key + "_embedding"
+        new_feature_key = model_key + "_embeddings"
         if new_feature_key not in dataset.features:
             model, preset_info = load_model_by_key(model_key)
             sampling_rate = preset_info.model_config["sample_rate"]
@@ -47,6 +47,49 @@ def add_embeddings(model_keys, feature_key, dataset, cache_dir):
             cache_file = os.path.join(cache_dir, f"{model_key}_cache.arrow")
             dataset = dataset.map(embedding_fn, cache_file_name=cache_file)
             modified = True
+    return dataset, modified
+
+def add_embeddings_batchwise(model_keys, feature_key, dataset, cache_dir, batch_size=100):
+    modified = False
+    
+    for model_key in model_keys:
+        new_feature_key = model_key + "_embeddings"
+        if new_feature_key not in dataset.features:
+            print(f"Processing {model_key} embeddings in batches of {batch_size}...")
+            
+            model, preset_info = load_model_by_key(model_key)
+            sampling_rate = preset_info.model_config["sample_rate"]
+            
+            embedding_fn = partial(
+                embed_example,
+                model=model,
+                feature_key=feature_key,
+                new_feature_key=new_feature_key,
+                sampling_rate=sampling_rate,
+            )
+            
+            # Process in batches
+            processed_datasets = []
+            total_samples = len(dataset)
+            
+            for i in range(0, total_samples, batch_size):
+                end_idx = min(i + batch_size, total_samples)
+                print(f"Processing batch {i//batch_size + 1}/{(total_samples + batch_size - 1)//batch_size}")
+                
+                # Select batch
+                batch_dataset = dataset.select(range(i, end_idx))
+                
+                # Process batch
+                cache_file = os.path.join(cache_dir, f"{model_key}_batch_{i}_{end_idx}_cache.arrow")
+                batch_processed = batch_dataset.map(embedding_fn, cache_file_name=cache_file)
+                
+                processed_datasets.append(batch_processed)
+            
+            # Concatenate all processed batches
+            print(f"Concatenating {len(processed_datasets)} batches...")
+            dataset = datasets.concatenate_datasets(processed_datasets)
+            modified = True
+    
     return dataset, modified
 
 def main():
@@ -76,7 +119,7 @@ def main():
         dataset_was_modified = False
 
         # Embeddings
-        modified_dataset, modified = add_embeddings(model_keys, feature_key, dataset, temp_cache_dir)
+        modified_dataset, modified = add_embeddings_batchwise(model_keys, feature_key, dataset, temp_cache_dir)
 
         if modified:
             dataset = modified_dataset

@@ -1,6 +1,11 @@
-batch_size: 4096 
+features: perch_8_embeddings
+labels: polyphony_degree
+pooling_strategy: mean
+test_split: 0.1
+val_split: 0.1
+batch_size: 32 
 learning_rate: 0.03
 epochs: 5
-device_request: 'cuda'
-input_file_path: 'data/processed/data.pt'
-output_file_path: 'models/checkpoints/model.pth'
+# device_request: 'cuda'
+# input_file_path: 'data/processed/data.pt'
+# output_file_path: 'models/checkpoints/model.pth'

@@ -47,10 +47,11 @@ def generate_mix_examples(raw_data, max_polyphony_degree, segment_duration, samp
         filename = Path(audio["path"]).name
 
         # Resample if necessary
-        audio = resample_audio(audio, audio['sampling_rate'], sampling_rate)
+        raw_signal = resample_audio(raw_signal, audio['sampling_rate'], sampling_rate)
 
         # If signal length below chosen segment duration in seconds, skip it
         if raw_signal.size < segment_duration * sampling_rate:
+            print(raw_signal.size)
             print(f'Skipping {filename} due to insufficient length.')
             continue
 
@@ -58,7 +59,7 @@ def generate_mix_examples(raw_data, max_polyphony_degree, segment_duration, samp
         if raw_signal.ndim > 1:  
             raw_signal = np.mean(raw_signal, axis=0)
         raw_signals.append(raw_signal)
-
+        
         raw_data_list.append(example)
 
         ebird_code = example['ebird_code']
@@ -155,7 +156,7 @@ def main():
     print("Mix audio in batches", flush=True)
 
     temp_dirs = []
-    for i, batch in enumerate(generate_batches(raw_data.select(range(100)), 
+    for i, batch in enumerate(generate_batches(raw_data, 
                                                max_polyphony_degree, segment_duration, 
                                                sampling_rate, random_seed=random_seed)):
         ds = Dataset.from_list(batch, features=mix_features)
