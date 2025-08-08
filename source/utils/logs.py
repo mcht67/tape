@@ -16,10 +16,60 @@ from typing import Any, Dict, Optional, Union
 from torch.utils.tensorboard import SummaryWriter
 from torch.utils.tensorboard.summary import hparams
 
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.metrics import confusion_matrix
+import matplotlib.patches as patches
+
 if __name__ == "__main__":
     import config
 else:
     from utils import config
+
+def plot_confusion_matrix(y_pred, y_true):
+    # Convert to flat NumPy arrays
+    y_true =  np.concatenate(y_true, axis=0) #np.array(y_true)
+    y_pred = np.concatenate(y_pred, axis=0) #np.array(y_pred)
+
+    # Get predictions and ground truth as int
+    y_true_rounded = y_true.astype(int)
+    y_pred_rounded = np.round(y_pred).astype(int).flatten()
+
+    # Get all unique polyphony degrees in true total counts
+    unique_total_classes = np.unique(np.concatenate([y_true_rounded, y_pred_rounded]))
+
+    # Compute confusion matrix for total polyphony degrees
+    cm_total = confusion_matrix(y_true_rounded, y_pred_rounded, labels=unique_total_classes)
+
+    # Calculate percentages per true class (row-wise)
+    with np.errstate(all='ignore'):
+        cm_total_percent = cm_total / cm_total.sum(axis=1, keepdims=True) * 100
+
+    # Create annotation strings (count + percentage)
+    annot_total = np.empty_like(cm_total).astype(str)
+    for r in range(cm_total.shape[0]):
+        for c in range(cm_total.shape[1]):
+            count = cm_total[r, c]
+            pct = cm_total_percent[r, c]
+            annot_total[r, c] = f"{count}\n({pct:.1f}%)"
+
+    # Plot heatmap for total polyphony degree
+    figure = plt.figure(figsize=(8, 6))
+    ax = sns.heatmap(cm_total, annot=annot_total, fmt='', cmap='Blues', cbar=True,
+                    xticklabels=unique_total_classes,
+                    yticklabels=unique_total_classes,
+                    annot_kws={"fontsize": 10})
+
+    # Highlight diagonal cells with a red rectangle
+    for i in range(len(unique_total_classes)):
+        ax.add_patch(patches.Rectangle((i, i), 1, 1, fill=False, edgecolor='red', lw=3))
+
+    plt.title("Confusion Matrix for Polyphony Degree")
+    plt.xlabel("Predicted Polyphony Degree")
+    plt.ylabel("True Polyphony Degree")
+    plt.tight_layout()
+    return figure
 
 class CustomSummaryWriter(SummaryWriter):
     """

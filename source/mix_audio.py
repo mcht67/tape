@@ -27,7 +27,7 @@ def flatten_features(prefix: str, features: Features) -> Features:
         flat[f"{prefix}_{key}"] = Sequence(value)
     return Features(flat)
 
-def generate_mix_examples(raw_data, max_polyphony_degree, segment_duration, sampling_rate, random_seed=None):
+def generate_mix_examples(raw_data, max_polyphony_degree, segment_length_in_samples, sampling_rate, random_seed=None):
 
     # Create polyphony degree map and get initial value
     polyphony_map = create_index_map_from_range(range(1, max_polyphony_degree + 1), random_state=random_seed)
@@ -47,10 +47,11 @@ def generate_mix_examples(raw_data, max_polyphony_degree, segment_duration, samp
         filename = Path(audio["path"]).name
 
         # Resample if necessary
-        audio = resample_audio(audio, audio['sampling_rate'], sampling_rate)
+        raw_signal = resample_audio(raw_signal, audio['sampling_rate'], sampling_rate)
 
         # If signal length below chosen segment duration in seconds, skip it
-        if raw_signal.size < segment_duration * sampling_rate:
+        if raw_signal.size < segment_length_in_samples:
+            print(raw_signal.size)
             print(f'Skipping {filename} due to insufficient length.')
             continue
 
@@ -58,7 +59,7 @@ def generate_mix_examples(raw_data, max_polyphony_degree, segment_duration, samp
         if raw_signal.ndim > 1:  
             raw_signal = np.mean(raw_signal, axis=0)
         raw_signals.append(raw_signal)
-
+        
         raw_data_list.append(example)
 
         ebird_code = example['ebird_code']
@@ -67,9 +68,8 @@ def generate_mix_examples(raw_data, max_polyphony_degree, segment_duration, samp
         # Mix colleted signals
         if len(ebird_code_multilabel) == polyphony_degree:  
 
-            # Trim/pad to the same length
-            min_len = min(len(a) for a in raw_signals)
-            raw_signals = [a[:min_len] for a in raw_signals]#
+            # Trim/pad to segment length
+            raw_signals = [a[:segment_length_in_samples] for a in raw_signals]#
 
             # Mix (sum all waveforms)
             mixed_signal = np.sum(raw_signals, axis=0)
@@ -102,9 +102,9 @@ def generate_mix_examples(raw_data, max_polyphony_degree, segment_duration, samp
             
             polyphony_degree = pop_random_index(polyphony_map)
 
-def generate_batches(raw_data, max_polyphony_degree, segment_duration, sampling_rate, batch_size=100, random_seed=None):
+def generate_batches(raw_data, max_polyphony_degree, segment_length_in_samples, sampling_rate, batch_size=100, random_seed=None):
     batch = []
-    for example in generate_mix_examples(raw_data, max_polyphony_degree, segment_duration, sampling_rate, random_seed):
+    for example in generate_mix_examples(raw_data, max_polyphony_degree, segment_length_in_samples, sampling_rate, random_seed):
         batch.append(example)
         if len(batch) == batch_size:
             yield batch
@@ -122,6 +122,7 @@ def main():
     sampling_rate = cfg.dataset.sampling_rate
 
     segment_duration = cfg.dataset.segment_duration # in seconds
+    segment_length_in_samples = segment_duration * sampling_rate
     max_polyphony_degree = cfg.dataset.max_polyphony_degree
 
     dataset_subset = cfg.dataset.subset
@@ -137,6 +138,7 @@ def main():
     print(raw_dataset_path)
     raw_data = load_from_disk(raw_dataset_path)
     raw_data = raw_data.cast_column("audio", Audio(sampling_rate=sampling_rate))
+    #raw_data = raw_data.take(100)
 
     # Setup features
     raw_features = raw_data.features
@@ -155,8 +157,8 @@ def main():
     print("Mix audio in batches", flush=True)
 
     temp_dirs = []
-    for i, batch in enumerate(generate_batches(raw_data.select(range(100)), 
-                                               max_polyphony_degree, segment_duration, 
+    for i, batch in enumerate(generate_batches(raw_data, 
+                                               max_polyphony_degree, segment_length_in_samples, 
                                                sampling_rate, random_seed=random_seed)):
         ds = Dataset.from_list(batch, features=mix_features)
         print(f'finished batch {i}')

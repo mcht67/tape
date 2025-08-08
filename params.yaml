@@ -7,8 +7,6 @@ dataset:
   sampling_rate: 32000
   segment_duration: 5
   max_polyphony_degree: 7
-  test_split: 0.1
-  val_split: 0.1
 embeddings:
   models:
   - perch_8
@@ -22,12 +20,14 @@ model:
   _target_: model.Conv1DAutoencoder
   input_size: 8000
 train:
-  batch_size: 4096
+  features: perch_8_embeddings
+  labels: polyphony_degree
+  pooling_strategy: mean
+  test_split: 0.1
+  val_split: 0.1
+  batch_size: 32
   learning_rate: 0.03
   epochs: 5
-  device_request: cuda
-  input_file_path: data/processed/data.pt
-  output_file_path: models/checkpoints/model.pth
 export:
   output_file_path: models/exports/model.pth
 paths:
