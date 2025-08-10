@@ -22,6 +22,8 @@ import seaborn as sns
 from sklearn.metrics import confusion_matrix
 import matplotlib.patches as patches
 
+import tensorflow as tf
+
 if __name__ == "__main__":
     import config
 else:
@@ -135,9 +137,11 @@ class CustomSummaryWriter(SummaryWriter):
         log_dir: str,
     ) -> None:
         """Logs hyperparameters and initial metrics to TensorBoard."""
-        params = params.flattened_copy()
-        params["datetime"] = self.datetime
-        self._add_hparams(hparam_dict=params, metric_dict=metrics, run_name=log_dir)
+        clean_params = params.tensorboard_compatible_copy()
+        clean_params["datetime"] = self.datetime
+        # params = params.flattened_copy()
+        #cparams["datetime"] = self.datetime
+        self._add_hparams(hparam_dict=clean_params, metric_dict=metrics, run_name=log_dir)
 
     def step(self) -> None:
         """
@@ -184,6 +188,122 @@ class CustomSummaryWriter(SummaryWriter):
         for k, v in metric_dict.items():
             if v is not None:
                 self.add_scalar(k, v)
+
+class CustomSummaryWriterCallback(tf.keras.callbacks.Callback):
+    """
+    Custom callback that integrates with your CustomSummaryWriter
+    Focuses on custom metrics and syncing, while standard TensorBoard handles built-in features
+    """
+    def __init__(self, writer, include_standard_tensorboard=True, val_dataset=None, 
+                 log_confusion_matrix=True, confusion_matrix_frequency=5):
+        super().__init__()
+        self.writer = writer
+        self.val_dataset = val_dataset
+        self.log_confusion_matrix = log_confusion_matrix
+        self.confusion_matrix_frequency = confusion_matrix_frequency
+
+         # Optionally create standard TensorBoard callback
+        self.standard_tb_callback = None
+        if include_standard_tensorboard:
+            # Create a standard TensorBoard callback that logs to the same directory
+            self.standard_tb_callback = tf.keras.callbacks.TensorBoard(
+                log_dir=str(writer.log_dir),
+                histogram_freq=1,  # Log histograms every epoch
+                write_graph=True,  # Log the model graph
+                write_images=False,
+                update_freq='epoch',
+                profile_batch=0,  # Disable profiling by default
+                embeddings_freq=0
+            )
+    def set_model(self, model):
+        """Called when the callback is attached to a model"""
+        super().set_model(model)
+        if self.standard_tb_callback:
+            self.standard_tb_callback.set_model(model)
+
+    def on_train_begin(self, logs=None):
+        print("Training started with CustomSummaryWriter logging")
+        if self.standard_tb_callback:
+            self.standard_tb_callback.on_train_begin(logs)
+
+    def on_epoch_begin(self, epoch, logs=None):
+        print(f"Epoch {epoch + 1}\n-------------------------------")
+        if self.standard_tb_callback:
+            self.standard_tb_callback.on_epoch_begin(epoch, logs)
+
+    def on_epoch_end(self, epoch, logs=None):
+        # """Log epoch-level metrics and confusion matrix"""
+        # train_loss = logs.get('loss', 0)
+        # val_loss = logs.get('val_loss', 0)
+        
+        # print(f"Train loss: {train_loss:>8f}")
+        # if val_loss > 0:
+        #     print(f"Val Error: \n Avg loss: {val_loss:>8f} \n")
+        
+        # # Log basic epoch metrics to your CustomSummaryWriter
+        # self.writer.add_scalar("Epoch_Loss/train", train_loss, epoch)
+        # if val_loss > 0:
+        #     self.writer.add_scalar("Epoch_Loss/val", val_loss, epoch)
+        
+        # Log confusion matrix every N epochs
+        if (self.log_confusion_matrix and self.val_dataset is not None 
+            and (epoch + 1) % self.confusion_matrix_frequency == 0):
+            self._log_confusion_matrix(epoch)
+
+        # Call standard TensorBoard callback
+        if self.standard_tb_callback:
+            self.standard_tb_callback.on_epoch_end(epoch, logs)
+        
+        # Step the writer (handles syncing)
+        self.writer.step()
+
+    def _log_confusion_matrix(self, epoch):
+        """Generate and log confusion matrix"""
+        try:
+            
+            # Get predictions and true labels
+            y_pred, y_true = self._get_predictions_and_true_labels()
+            
+            # Generate confusion matrix plot
+            figure = plot_confusion_matrix(y_pred, y_true)
+            
+            # Convert to image and log
+            self.writer.add_figure("Confusion_Matrix", figure, epoch)
+            
+            print(f"Confusion matrix logged at epoch {epoch + 1}")
+            
+        except Exception as e:
+            print(f"Failed to log confusion matrix: {e}")
+
+    def _get_predictions_and_true_labels(self):
+        """Get predictions and true labels from validation dataset"""
+        y_pred_list = []
+        y_true_list = []
+        
+        for batch_x, batch_y in self.val_dataset:
+            predictions = self.model(batch_x, training=False)
+            y_pred_list.append(predictions.numpy())
+            y_true_list.append(batch_y.numpy())
+        
+        return y_pred_list, y_true_list
+
+    def on_train_end(self, logs=None):
+        """Final logging and cleanup"""
+        # Log final confusion matrix
+        if self.log_confusion_matrix and self.val_dataset is not None:
+            self._log_confusion_matrix(epoch=-1)  # Special epoch for final
+
+        if self.standard_tb_callback:
+            self.standard_tb_callback.on_train_end(logs)
+        
+        # # Log final metrics
+        # if logs:
+        #     for metric_name, metric_value in logs.items():
+        #         if metric_value is not None:
+        #             self.writer.add_scalar(f"Final/{metric_name}", metric_value)
+        
+        print("Training completed!")
+        self.writer.close()
 
 
 def return_tensorboard_path(subfolder=None, suffix='') -> PosixPath:

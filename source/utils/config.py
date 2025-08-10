@@ -123,6 +123,87 @@ class Params(dict):
         """
         params_dict: Dict[str, Any] = copy.deepcopy(self)
         return self._flatten_dict(params_dict)
+    
+    def tensorboard_compatible_copy(self) -> Dict[str, Any]:
+            """
+            Creates a flattened copy of the Params dictionary with types compatible with TensorBoard.
+            
+            Returns:
+                Dict[str, Any]: A flattened dictionary with TensorBoard-compatible types.
+            """
+            flattened = self.flattened_copy()
+            return self._clean_for_tensorboard(flattened)
+    
+    @staticmethod
+    def _clean_for_tensorboard(params_dict: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Clean hyperparameters to only include types supported by TensorBoard.
+        Supported types: int, float, str, bool, torch.Tensor
+        
+        Args:
+            params_dict: Dictionary of parameters to clean
+            
+        Returns:
+            Dictionary with only TensorBoard-supported types
+        """
+        import torch
+        
+        clean_params = {}
+        
+        for key, value in params_dict.items():
+            try:
+                if isinstance(value, (int, float, str, bool)):
+                    clean_params[key] = value
+                elif isinstance(value, torch.Tensor):
+                    # Convert single-value tensors to scalars
+                    if value.numel() == 1:
+                        clean_params[key] = value.item()
+                    else:
+                        clean_params[key] = str(value.shape)
+                elif isinstance(value, (list, tuple)):
+                    # Handle different types of lists
+                    if len(value) == 0:
+                        clean_params[key] = "[]"
+                    elif all(isinstance(x, str) for x in value):
+                        # String lists: join with commas (with length limit)
+                        joined = ", ".join(value)
+                        if len(joined) <= 100:  # Reasonable length limit
+                            clean_params[key] = joined
+                        else:
+                            clean_params[key] = f"{', '.join(value[:5])}... ({len(value)} total)"
+                    elif all(isinstance(x, (int, float)) for x in value):
+                        # Numeric lists: show as string if not too long
+                        if len(value) <= 10:
+                            clean_params[key] = str(value)
+                        else:
+                            clean_params[key] = f"[{value[:3]}...] ({len(value)} items)"
+                    else:
+                        # Mixed or complex lists: show first few items
+                        if len(value) <= 5:
+                            clean_params[key] = str(value)
+                        else:
+                            clean_params[key] = f"[{len(value)} items]"
+                elif isinstance(value, dict):
+                    # For nested dicts that somehow weren't flattened
+                    clean_params[key] = str(value)
+                elif hasattr(value, '__len__') and not isinstance(value, str):
+                    # Arrays, numpy arrays, etc.
+                    clean_params[key] = f"shape_{getattr(value, 'shape', len(value))}"
+                elif value is None:
+                    clean_params[key] = "None"
+                else:
+                    # Convert everything else to string
+                    str_value = str(value)
+                    # Limit string length for readability
+                    if len(str_value) > 100:
+                        str_value = str_value[:97] + "..."
+                    clean_params[key] = str_value
+                    
+            except Exception as e:
+                print(f"Warning: Could not process parameter '{key}': {e}")
+                clean_params[key] = f"error_{type(value).__name__}"
+        
+        return clean_params
 
 
 def prepare_device(request: str) -> torch.device:

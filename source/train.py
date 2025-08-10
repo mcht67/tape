@@ -7,7 +7,7 @@ from utils.general import reshape_tensor_data
 from functools import partial
 import tensorflow as tf
 import os
-from utils.logs import return_tensorboard_path, plot_confusion_matrix, CustomSummaryWriter
+from utils.logs import return_tensorboard_path, plot_confusion_matrix, CustomSummaryWriter, CustomSummaryWriterCallback
 from tensorflow.keras.callbacks import TensorBoard
 import matplotlib.pyplot as plt
 import io
@@ -126,30 +126,28 @@ batch_size = cfg.train.batch_size
 
 preprocessed_dataset_path =  cfg.paths.preprocessed_dataset
 
-# Setup tensorboard
-# If defined in cfg use tensorboard path (define it in params.yaml for debugging purposes)
-# else use logs.return_tensorboard_path (default with dvc run)
-if 'tensorboard_path' in cfg.train.keys():
-    default_dir = os.getcwd()
-    dvc_exp_name = 'debug'
-    current_datetime = datetime.datetime.now().strftime("%Y%m%d-%H%M")
-
-    tensorboard_path = Path(
-        f"{default_dir}/{cfg.train.tensorboard_path}/debug/{current_datetime}_{dvc_exp_name}"
-    )
-else:
-    tensorboard_path = logs.return_tensorboard_path()
-    tensorboard_subfolder = f'{cfg.dataset.subset}'
-    tensorboard_path_suffix = f'_{features}'
-    tensorboard_path = return_tensorboard_path(subfolder=tensorboard_subfolder) # './logs/' + features + version #return_tensorboard_path()
-os.makedirs(tensorboard_path, exist_ok=True)
-print(tensorboard_path)
-
-# Create a SummaryWriter object to write the tensorboard logs
-# metrics = {'Epoch_Loss/train': None, 'Epoch_Loss/test': None, 'Batch_Loss/train': None}
-# writer = CustomSummaryWriter(log_dir=tensorboard_path, params=params, metrics=metrics, sync_interval=0)
 
 for run in ["_run1"]:
+
+    # Setup tensorboard
+    # If defined in cfg use tensorboard path (define it in params.yaml for debugging purposes)
+    # else use return_tensorboard_path (default with dvc run)
+    if 'tensorboard_path' in cfg.train.keys():
+        default_dir = os.getcwd()
+        dvc_exp_name = 'debug'
+        current_datetime = datetime.datetime.now().strftime("%Y%m%d-%H%M")
+        os.environ['DEFAULT_DIR'] = default_dir
+
+        tensorboard_path = Path(
+            f"{default_dir}/{cfg.train.tensorboard_path}/debug/{current_datetime}_{dvc_exp_name}"
+        )
+    else:
+        tensorboard_path = return_tensorboard_path()
+        tensorboard_subfolder = f'{cfg.dataset.subset}'
+        tensorboard_path_suffix = f'_{features}'
+        tensorboard_path = return_tensorboard_path(subfolder=tensorboard_subfolder) # './logs/' + features + version #return_tensorboard_path()
+    os.makedirs(tensorboard_path, exist_ok=True)
+    print(tensorboard_path)
     
     # Load dataset
     preprocessed_dataset = load_from_disk(preprocessed_dataset_path)
@@ -172,13 +170,17 @@ for run in ["_run1"]:
         layers.Dense(1)  # Regression output: total polyphony degree
     ])
 
-    # Callbacks
-    tensorboard_callback = TensorBoard(log_dir=tensorboard_path, histogram_freq=1)
+    # Create a SummaryWriter object to write the tensorboard logs
+    metrics = {'Epoch_Loss/train': None, 'Epoch_Loss/test': None} #, 'Batch_Loss/train': None}
+    writer = CustomSummaryWriter(log_dir=tensorboard_path, params=params, metrics=metrics, sync_interval=0)
+
+    tensorboard_callback = CustomSummaryWriterCallback(writer=writer, include_standard_tensorboard=True, val_dataset=val_dataset, 
+                 log_confusion_matrix=True, confusion_matrix_frequency=5)
 
     # Train model
     model.compile(optimizer='adam', loss='mse', metrics=['mae'])
     history = model.fit(train_dataset, validation_data=val_dataset, epochs=epochs, callbacks=[tensorboard_callback])
-    model.save('polyReg.keras')
+    #model.save('polyReg.keras')
 
     # Plot Confusion Matrix
     y_pred, y_true = get_predictions_and_true_labels(model, val_dataset)
@@ -186,9 +188,4 @@ for run in ["_run1"]:
     figure = plot_confusion_matrix(y_pred, y_true)
     image = plot_to_image(figure)
 
-    writer = tf.summary.create_file_writer(str(tensorboard_path))
-    with writer.as_default():
-        tf.summary.image("Confusion Matrix", image, step=0)
-    writer.close()
-
-    dataset_splits.cleanup_cache_files()
+dataset_splits.cleanup_cache_files()
