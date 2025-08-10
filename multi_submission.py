@@ -11,24 +11,32 @@ import sys
 import shutil
 
 # Submit experiment for hyperparameter combination
-def submit_batch_job(arguments, model, input_size):
+def submit_batch_job(arguments, dataset, feature, epochs):
 
     # Set dynamic parameters for the batch job as environment variables
     # But dont forget to add the os.environ to the new environment variables otherwise the PATH is not found
     env = {
         **os.environ,
-        "EXP_PARAMS": f"-S model._target_={model} -S model.input_size={input_size}",
+        "EXP_PARAMS": f"-S dataset.subset={dataset['subset']} -S dataset.split={dataset['split']} -S train.features={feature} -S train.epochs={epochs}",
+        "DEFAULT_DIR": os.getcwd(),
+        "TUSTU_SYNC_INTERVAL": None
     }
 
     # For debugging and local runs
     
     if shutil.which('sbatch') is None:
         print(f"SLURM not available. Would submit job with:")
-        print(f"  Model: {model}")
-        print(f"  Input size: {input_size}")
+        print(f"  Dataset Subset: {dataset['subset']}")
+        print(f"  Dataset Split: {dataset['split']}")
+        print(f'  Feature: {feature}')
+        print(f"  Epochs: {epochs}")
         print(f"  Arguments: {' '.join(arguments)}")
         print(f"  Environment: EXP_PARAMS={env['EXP_PARAMS']}")
-        subprocess.run(['bash', '-c', f'./exp_workflow.sh {" ".join(arguments)}'], env=env)
+
+        # Run DVC experiment directly
+        cmd = 'dvc exp run $EXP_PARAMS'
+        print(cmd)
+        subprocess.run(cmd, shell=True, env=env)
         return
     
     # Run sbatch command with the environment variables as bash! subprocess! command (otherwise module not found)
@@ -38,10 +46,12 @@ if __name__ == "__main__":
 
     arguments = sys.argv[1:]
 
-    models = ['model.Conv1DAutoencoder', 'model.Conv1DAutoencoder_test']
+    dataset_list = [{'subset': 'HSN_xc', 'split': 'train'}]
+    features_list = ['perch_8_embeddings'] #, 'yamnet_embeddings']
+    epochs_list = [1]
 
-    for model in models:
-        submit_batch_job(arguments, model, input_size=4000)
+    for features, dataset, epochs in itertools.product(features_list, dataset_list, epochs_list) :
+        submit_batch_job(arguments, dataset, features, epochs)
 
     # test_split_list = [0.2, 0.3]
     # batch_size_list = [2048, 4096]
